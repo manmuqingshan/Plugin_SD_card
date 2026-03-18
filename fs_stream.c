@@ -33,6 +33,7 @@
 #include "grbl/protocol.h"
 #include "grbl/state_machine.h"
 #include "grbl/stream_file.h"
+#include "grbl/strutils.h"
 #include "grbl/vfs.h"
 #include "grbl/task.h"
 
@@ -760,8 +761,30 @@ FLASHMEM static void onReportOptions (bool newopt)
 #else
         hal.stream.write(",FS");
 #endif
-    } else
-        report_plugin("FS stream", "1.06");
+    } else {
+
+        report_plugin("FS stream", "1.07");
+
+        vfs_drives_t *dh;
+        if((dh = vfs_drives_open())) {
+            vfs_drive_t *drive;
+            while((drive = vfs_drives_read(dh, true))) {
+                hal.stream.write("[FS:");
+                hal.stream.write(drive->name);
+                hal.stream.write("@");
+                hal.stream.write(vfs_fixpath(drive->path));
+                vfs_free_t *info;
+                if((info = vfs_drive_getfree(drive))) {
+                    hal.stream.write(" size ");
+                    hal.stream.write(btoa(info->size));
+                    hal.stream.write(", free ");
+                    hal.stream.write(btoa(info->size - info->used));
+                }
+                hal.stream.write("]" ASCII_EOL);
+            }
+            vfs_drives_close(dh);
+        }
+    }
 }
 
 FLASHMEM static void onFsUnmount (const char *path)
