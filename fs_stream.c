@@ -307,19 +307,19 @@ FLASHMEM static void stream_end_job (bool flush)
 
     grbl.on_stream_changed = on_stream_changed;
 
-    memcpy(&hal.stream, &active_stream, sizeof(io_stream_t));       // Restore stream pointers,
-    stream_set_type(hal.stream.type, hal.stream.file);              // ...
-    active_stream.type = StreamType_Null;                           // ...
-    hal.stream.set_enqueue_rt_handler(enqueue_realtime_command);    // real time command handling and
-    if(grbl.report.status_message == trap_status_messages)          // ...
-        grbl.report.status_message = status_message;                // normal status message handling.
+    memcpy(&hal.stream, &active_stream, offsetof(io_stream_t, report)); // Restore stream pointers,
+    stream_set_type(hal.stream.type, hal.stream.file);                  // ...
+    active_stream.type = StreamType_Null;                               // ...
+    hal.stream.set_enqueue_rt_handler(enqueue_realtime_command);        // real time command handling and
+    if(grbl.report.status_message == trap_status_messages)              // ...
+        grbl.report.status_message = status_message;                    // normal status message handling.
     else
         report_init_fns();
 
     status_message = NULL;
 
-    if(flush)                                                       // Flush input buffer?
-        hal.stream.reset_read_buffer();                             // Yes, do it.
+    if(flush)                                                           // Flush input buffer?
+        hal.stream.reset_read_buffer();                                 // Yes, do it.
 
     webui = frewind = false;
 
@@ -763,7 +763,7 @@ FLASHMEM static void onReportOptions (bool newopt)
 #endif
     } else {
 
-        report_plugin("FS stream", "1.07");
+        report_plugin("FS stream", "1.08");
 
         vfs_drives_t *dh;
         if((dh = vfs_drives_open())) {
