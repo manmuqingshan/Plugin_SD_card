@@ -3,7 +3,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2018-2025 Terje Io
+  Copyright (c) 2018-2026 Terje Io
 
   grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -162,35 +162,6 @@ FLASHMEM static status_code_t sd_cmd_unmount (sys_state_t state, char *args)
     return fatfs ? (sdcard_unmount() ? Status_OK : Status_SDMountError) : Status_SDNotMounted;
 }
 
-#if FF_FS_READONLY == 0 && FF_USE_MKFS == 1
-
-FLASHMEM static status_code_t sd_cmd_format (sys_state_t state, char *args)
-{
-    status_code_t status = Status_InvalidStatement;
-
-    if(fatfs) {
-
-        vfs_drive_t *drive = vfs_get_drive("/");
-
-        if(drive->fs && !strcmp(args, "yes")) {
-
-            report_message("Formatting SD card...", Message_Info);
-
-            if(vfs_drive_format(drive) == 0)
-                status = !sdcard_mount() ? Status_SDMountError : Status_OK;
-            else
-                status = Status_FsFormatFailed;
-
-            report_message("", Message_Plain);
-        }
-    } else
-        status = Status_SDNotMounted;
-
-    return status;
-}
-
-#endif
-
 FLASHMEM static void sd_detect (void *mount)
 {
     if((uint32_t)mount == 0)
@@ -270,17 +241,14 @@ FLASHMEM static void onReportOptions (bool newopt)
     if(newopt)
         hal.stream.write(",SD");
     else
-        report_plugin("SDCARD", "1.26");
+        report_plugin("SDCARD", "1.27");
 }
 
 FLASHMEM sdcard_events_t *sdcard_init (void)
 {
     PROGMEM static const sys_command_t sdcard_command_list[] = {
         {"FM", sd_cmd_mount, { .noargs = On }, { .str = "mount SD card" } },
-        {"FU", sd_cmd_unmount, { .noargs = On }, { .str = "unmount SD card" } },
-#if FF_FS_READONLY == 0 && FF_USE_MKFS == 1
-        {"FF", sd_cmd_format, {}, { .str = "$FF=yes - format SD card" } },
-#endif
+        {"FU", sd_cmd_unmount, { .noargs = On }, { .str = "unmount SD card" } }
     };
 
     static sys_commands_t sdcard_commands = {

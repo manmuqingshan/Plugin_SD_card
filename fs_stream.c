@@ -629,7 +629,7 @@ FLASHMEM static status_code_t cmd_rewind (sys_state_t state, char *args)
     return Status_OK;
 }
 
-FLASHMEM static status_code_t sd_cmd_to_output (sys_state_t state, char *args)
+FLASHMEM static status_code_t cmd_to_output (sys_state_t state, char *args)
 {
     status_code_t retval = Status_Unhandled;
 
@@ -690,6 +690,61 @@ FLASHMEM static status_code_t cmd_cwd (sys_state_t state, char *args)
     }
 
     return retval;
+}
+
+FLASHMEM static status_code_t cmd_format (sys_state_t state, char *args)
+{
+    status_code_t status = Status_InvalidStatement;
+
+    vfs_drives_t *dh;
+
+    if((dh = vfs_drives_open())) {
+
+        if(!strcmp(args, "yes"))
+            strcpy(args, "fatfs");
+
+        vfs_drive_t *drive;
+        while((drive = vfs_drives_read(dh, true))) {
+            if(!strcasecmp(args, *args == '/' ? drive->path : drive->name)) {
+                report_message("Formatting...", Message_Info);
+                if(vfs_drive_format(drive) == 0)
+                    status = !strcmp(drive->name, "FatFs") ? system_execute_line("$FM") : Status_OK;
+                else
+                    status = Status_FsFormatFailed;
+                report_message("", Message_Plain);
+                break;
+            }
+        }
+        vfs_drives_close(dh);
+    }
+
+    return status;
+}
+
+FLASHMEM static status_code_t cmd_mount_info (sys_state_t state, char *args)
+{
+    vfs_drives_t *dh;
+
+    if((dh = vfs_drives_open())) {
+        vfs_drive_t *drive;
+        while((drive = vfs_drives_read(dh, true))) {
+            hal.stream.write("[FS:");
+            hal.stream.write(drive->name);
+            hal.stream.write("@");
+            hal.stream.write(vfs_fixpath(drive->path));
+            vfs_free_t *info;
+            if((info = vfs_drive_getfree(drive))) {
+                hal.stream.write(" size ");
+                hal.stream.write(btoa(info->size));
+                hal.stream.write(", free ");
+                hal.stream.write(btoa(info->size - info->used));
+            }
+            hal.stream.write("]" ASCII_EOL);
+        }
+        vfs_drives_close(dh);
+    }
+
+    return Status_OK;
 }
 
 FLASHMEM static status_code_t cmd_unlink (sys_state_t state, char *args)
@@ -761,30 +816,9 @@ FLASHMEM static void onReportOptions (bool newopt)
 #else
         hal.stream.write(",FS");
 #endif
-    } else {
+    } else
+        report_plugin("FS stream", "1.10");
 
-        report_plugin("FS stream", "1.08");
-
-        vfs_drives_t *dh;
-        if((dh = vfs_drives_open())) {
-            vfs_drive_t *drive;
-            while((drive = vfs_drives_read(dh, true))) {
-                hal.stream.write("[FS:");
-                hal.stream.write(drive->name);
-                hal.stream.write("@");
-                hal.stream.write(vfs_fixpath(drive->path));
-                vfs_free_t *info;
-                if((info = vfs_drive_getfree(drive))) {
-                    hal.stream.write(" size ");
-                    hal.stream.write(btoa(info->size));
-                    hal.stream.write(", free ");
-                    hal.stream.write(btoa(info->size - info->used));
-                }
-                hal.stream.write("]" ASCII_EOL);
-            }
-            vfs_drives_close(dh);
-        }
-    }
 }
 
 FLASHMEM static void onFsUnmount (const char *path)
@@ -829,7 +863,9 @@ FLASHMEM void fs_stream_init (void)
     #if FF_FS_READONLY == 0 && FF_FS_MINIMIZE == 0
         {"FD", cmd_unlink, {}, { .str = "$FD=<filename> - delete file" } },
     #endif
-        {"F<", sd_cmd_to_output, {}, { .str = "$F<=<filename> - dump file to output" } },
+        {"FF", cmd_format, {}, { .str = "$FF=yes - format file system" } },
+        {"F<", cmd_to_output, {}, { .str = "$F<=<filename> - dump file to output" } },
+        {"FI", cmd_mount_info, { .noargs = On }, { .str = "output mount information" } },
         {"CWD", cmd_cwd, {}, { .str = "$CWD=<path> - set current working directory" } },
         {"PWD", cmd_cwd, { .noargs = On }, { .str = "output current working directory" } }
     };
