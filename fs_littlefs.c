@@ -195,7 +195,7 @@ FLASHMEM static char *fs_getcwd (char *buf, size_t size)
 
 FLASHMEM static vfs_dir_t *fs_opendir (const char *path)
 {
-    vfs_dir_t *dir = calloc(sizeof(vfs_dir_t) + sizeof(lfs_dir_t), 1);
+    vfs_dir_t *dir = calloc(1, sizeof(vfs_dir_t) + sizeof(lfs_dir_t));
 
     if (dir && (vfs_errno = lfs_dir_open(&lfs, (lfs_dir_t *)&dir->handle, path)) != LFS_ERR_OK) {
         free(dir);

@@ -89,7 +89,7 @@ static file_t file = {
 };
 
 static struct {
-    bool mounted;
+    uint8_t mounted;
     vfs_st_mode_t mode;
 } fs = {};
 
@@ -823,8 +823,7 @@ FLASHMEM static void onReportOptions (bool newopt)
 
 FLASHMEM static void onFsUnmount (const char *path)
 {
-    if(path[0] == '/' && path[1] == '\0')
-        fs.mounted = false;
+    fs.mounted--;
 
     if(on_vfs_unmount)
         on_vfs_unmount(path);
@@ -832,9 +831,9 @@ FLASHMEM static void onFsUnmount (const char *path)
 
 FLASHMEM static void onFsMount (const char *path, const vfs_t *vfs, vfs_st_mode_t mode)
 {
-    if(path[0] == '/' && path[1] == '\0') {
+    if(!mode.hidden) {
 
-        fs.mounted = true;
+        fs.mounted++;
         fs.mode = mode;
 
         if(driver_reset == NULL) {

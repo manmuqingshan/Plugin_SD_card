@@ -6,7 +6,7 @@ The SD card plugin adds a few `$` commands for listing files and running G-code 
 
 `$FM`
 
-Mount card as the root \(/\) directory.
+Mount card as the root \(`/`\) directory.
 
 `$F`
 
@@ -19,7 +19,10 @@ List all files on the card recursively regardless of filetype.
 
 `$F=<filename>`
 
-Run g-code in file. If the file ends with `M2` or rewind mode is active then it will be "rewound" and a cycle start command will start it again.
+Run g-code in file or change current directory. If the file ends with `M2` or rewind mode is active then it will be "rewound" and a cycle start command will start it again.
+If the filename is a directory or path to a directory current directory is set accordingly, if it is `..` move up one level.
+> [!NOTE]
+> `$650 option` for _Hierachical listing_ has to be enabled to allow changing the current working directory.
 
 `$FR`
 
@@ -33,11 +36,18 @@ Dump file content to output stream.
 
 Delete file.
 
+`$FF=<mount path>` or `$FF=<filing system>`
+
+Format filing system system.
+
+`<filing system>` is `fatfs` for SD card and `littlefs` for littlefs. SD crad is typically mounted as root \(`/`\).
+
 Dependencies:
 
-[FatFS library](http://www.elm-chan.org/fsw/ff/00index_e.html)
+[FatFS library](http://www.elm-chan.org/fsw/ff/00index_e.html) and/or MCU/board with flash storage compatible with [littlefs](https://github.com/littlefs-project/littlefs).
 
-__NOTE:__ some drivers uses ports of FatFS provided by the MCU supplier.
+> [!NOTE]
+> Some drivers uses ports of FatFS provided by the MCU supplier.
 
 #### YModem
 
@@ -75,4 +85,4 @@ Similarly if `/littlefs/ps.macro` or `/ps.macro` is present it will be called wh
 `tc.macro` and `ts.macro` can be used to add support for automatic tool changers \(ATCs\), [this discussion](https://github.com/grblHAL/core/discussions/577) contains examples and ideas for how to.
 
 ---
-2024-09-25
+2026-04-15
